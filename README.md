@@ -8,3 +8,19 @@ Convo.Telegram.Chatmenu - Implementation of Telegram Specific menu
 
 
 CONVO_BOT_SECRET
+
+
+### Example settings for example
+```json
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet"
+    }
+}
+```
+
+## Notes
+
+Have a look if you can create a custom binding for Telegram instead of injecting the context and calling it manually.

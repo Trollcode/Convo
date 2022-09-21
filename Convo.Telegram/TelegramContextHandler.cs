@@ -11,6 +11,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Convo.Telegram
 {
@@ -18,63 +20,163 @@ namespace Convo.Telegram
     {
         private readonly ILogger<TelegramContextHandler> logger;
         private readonly ILoggerFactory loggerFactory;
-        private readonly IServiceProvider serviceProvider;
-        private readonly IConfiguration configuration;
         private readonly IConvoContextStorage storage;
 
         private readonly TelegramBotClient telegramClient;
 
-        public TelegramContextHandler(ILoggerFactory loggerFactory, IConfiguration configuration, IServiceProvider serviceProvider, IConvoContextStorage storage) 
+        private bool isInitialized = false;
+
+        public TelegramContextHandler(ILoggerFactory loggerFactory, IConvoContextStorage storage) 
             : base(storage)
         {
             logger = loggerFactory.CreateLogger<TelegramContextHandler>();
 
-            this.configuration = configuration;
-            this.serviceProvider = serviceProvider;
             this.loggerFactory = loggerFactory;
             this.storage = storage;
 
             string? telegramKey = Environment.GetEnvironmentVariable("CONVO_TELEGRAM_KEY");
             if (telegramKey == null)
             {
-                telegramKey = configuration["Convo:Telegram:Key"];
-                if (telegramKey == null)
-                {
-                    logger.LogError("Could not find a telegram key stored in environment variable CONVO_TELEGRAM_KEY, or appsettings path Convo:Telegram:Key");
-                }
+                logger.LogError("Could not find a telegram key stored in environment variable CONVO_TELEGRAM_KEY.");
             }
 
-            //RegisterOrUpdateChatAction
             telegramClient = new TelegramBotClient(telegramKey);
         }
 
-        public override async Task Initialize()
+        public override async Task RegisterCommands()
         {
-            await telegramClient.SetMyCommandsAsync(RegisteredActions.Select(x => new BotCommand
+            if(!isInitialized)
             {
-                Command = x.Key,
-                Description = x.Value
-            }), BotCommandScope.AllPrivateChats());
+                await telegramClient.SetMyCommandsAsync(RegisteredActions.Select(x => new BotCommand
+                {
+                    Command = x.Key,
+                    Description = x.Value
+                }), BotCommandScope.AllPrivateChats());
+                isInitialized = true;
+            }
         }
 
-        protected override Task<bool> UpdateMessage(ConvoResponse response)
+        public async Task RegisterWebhook(string url)
         {
-            throw new NotImplementedException();
+            WebhookInfo info = await telegramClient.GetWebhookInfoAsync();
+            if(!info.Url.ToLowerInvariant().Equals(url.ToLowerInvariant()))
+            {
+                await telegramClient.SetWebhookAsync(url, dropPendingUpdates: true);
+            }
         }
 
-        protected override Task<bool> DeleteMessage(ConvoResponse response)
+        public async Task HandleUpdate(Update update)
         {
-            throw new NotImplementedException();
+            try
+            {
+                switch (update.Type)
+                {
+                    case UpdateType.Message:
+                        await OnMessageReceived(update.Message);
+                        //await BotOnMessageReceived(botClient, update.Message);
+                        break;
+                    case UpdateType.EditedMessage:
+                        await OnMessageReceived(update.EditedMessage);
+                        break;
+                    case UpdateType.Unknown:
+                    case UpdateType.InlineQuery:
+                    case UpdateType.ChosenInlineResult:
+                    case UpdateType.CallbackQuery:
+                        await OnCallbackQueryReceived(update.CallbackQuery);
+                        break;
+                    case UpdateType.ChannelPost:
+                    case UpdateType.EditedChannelPost:
+                    case UpdateType.ShippingQuery:
+                    case UpdateType.PreCheckoutQuery:
+                    case UpdateType.Poll:
+                    case UpdateType.PollAnswer:
+                    case UpdateType.MyChatMember:
+                    case UpdateType.ChatMember:
+                    case UpdateType.ChatJoinRequest:
+                    default:
+                        logger.LogWarning($"Unhandeled Update Type: {update.Type}");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Could not process message");
+            }
         }
 
-        protected override Task<bool> SendResponse(ConvoResponse response)
+
+        private async Task OnCallbackQueryReceived(CallbackQuery? callbackQuery)
         {
-            throw new NotImplementedException();
+            if (callbackQuery == null) return;
+            if (callbackQuery.Message == null) return;
+
+            await HandleMessage(new ConvoMessage
+            {
+                ConversationId = callbackQuery.Message.Chat.Id.ToString(),
+                MessageId = callbackQuery.Message.MessageId.ToString(),
+                Alias = callbackQuery.From.Username,
+                Name = $"{callbackQuery.From.FirstName} {callbackQuery.From.LastName}",
+                Text = callbackQuery.Data,
+                Protocol = Protocol.TELEGRAM
+            });
         }
 
-        protected override Task OnSendFailure(ConvoResponse response)
+        private async Task OnMessageReceived(Message? message)
         {
-            throw new NotImplementedException();
+            if (message == null) return;
+            if (message.Type != MessageType.Text) return;
+
+            await HandleMessage(new ConvoMessage
+            {
+                ConversationId = message.Chat.Id.ToString(),
+                MessageId = message.MessageId.ToString(),
+                Alias = message.Chat.Username,
+                Name = $"{message.Chat.FirstName} {message.Chat.LastName}",
+                Text = message.Text,
+                Protocol = Protocol.TELEGRAM
+            });
+        }
+
+        protected override async Task<bool> HandleMessage(ConvoMessage message)
+        {
+            await RegisterCommands();
+            return await base.HandleMessage(message);
+        }
+
+        protected override async Task<bool> UpdateMessage(string conversationId, ConvoResponse msg)
+        {
+            if(long.TryParse(conversationId, out long chatId) && int.TryParse(msg.UpdateMessageId, out int messageId))
+            {
+                await telegramClient.EditMessageTextAsync(new ChatId(chatId), messageId, msg.Text);
+                return true;
+            }
+            return false;
+        }
+
+        protected override async Task<bool> DeleteMessage(string conversationId, ConvoResponse msg)
+        {
+            if (long.TryParse(conversationId, out long chatId) && int.TryParse(msg.DeleteMessageId, out int messageId))
+            {
+                await telegramClient.DeleteMessageAsync(new ChatId(chatId), messageId);
+                return true;
+            }
+            return false;
+        }
+
+        protected override async Task<bool> SendResponse(string conversationId, ConvoResponse msg)
+        {
+            if (long.TryParse(conversationId, out long chatId))
+            {
+                await telegramClient.SendTextMessageAsync(new ChatId(chatId), msg.Text);
+                return true;
+            }
+            return false;
+        }
+
+        protected override Task OnSendFailure(string conversationId, ConvoResponse response)
+        {
+            logger.LogError($"Error sending message to conversation {conversationId}");
+            return Task.CompletedTask;
         }
 
     }

@@ -61,7 +61,7 @@ namespace Convo.Abstractions
             return (ctx, ctxData);
         }
 
-        protected async Task<bool> HandleMessage(ConvoMessage message)
+        protected virtual async Task<bool> HandleMessage(ConvoMessage message)
         {
             (ConvoContext, Dictionary<string, string>) info = await GetContextAndDataForMessage(message);
 
@@ -132,7 +132,7 @@ namespace Convo.Abstractions
             {
                 if (!string.IsNullOrWhiteSpace(chatResponse.DeleteMessageId))
                 {
-                    await DeleteMessage(chatResponse);
+                    await DeleteMessage(message.ConversationId, chatResponse);
                 }
 
                 if (string.IsNullOrWhiteSpace(chatResponse.Text))
@@ -142,24 +142,24 @@ namespace Convo.Abstractions
 
                 if (!string.IsNullOrWhiteSpace(chatResponse.UpdateMessageId))
                 {
-                    await UpdateMessage(chatResponse);
+                    await UpdateMessage(message.ConversationId, chatResponse);
                 }
                 else
                 {
-                    await SendResponse(chatResponse);
+                    await SendResponse(message.ConversationId, chatResponse);
                 }
             }
 
             return true;
         }
 
-        public abstract Task Initialize();
+        public abstract Task RegisterCommands();
 
-        protected abstract Task<bool> UpdateMessage(ConvoResponse response);
-        protected abstract Task<bool> DeleteMessage(ConvoResponse response);
-        protected abstract Task<bool> SendResponse(ConvoResponse response);
+        protected abstract Task<bool> UpdateMessage(string conversationId, ConvoResponse response);
+        protected abstract Task<bool> DeleteMessage(string conversationId, ConvoResponse response);
+        protected abstract Task<bool> SendResponse(string conversationId, ConvoResponse response);
 
-        protected abstract Task OnSendFailure(ConvoResponse response);
+        protected abstract Task OnSendFailure(string conversationId, ConvoResponse response);
 
     }
 }

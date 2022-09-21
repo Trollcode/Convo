@@ -5,9 +5,9 @@ namespace Convo.Telegram
 {
     public static class ServiceCollectionServiceExtensions
     {
-        public static IServiceCollection AddTelegramConvo(this IServiceCollection services)
+        public static IServiceCollection AddServerlessTelegramConvo(this IServiceCollection services)
         {
-
+            services.AddSingleton<TelegramContextHandler>();
             return services;
         }
     }
