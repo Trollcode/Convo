@@ -27,6 +27,11 @@
 		  <ExcludeAssets>contentFiles</ExcludeAssets>
 		  <PrivateAssets>contentfiles; analyzers</PrivateAssets>
 	  </PackageReference>
+	  <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1">
+		  <IncludeAssets>runtime; compile; build; native; analyzers; buildtransitive</IncludeAssets>
+		  <ExcludeAssets>contentFiles</ExcludeAssets>
+		  <PrivateAssets>contentfiles; analyzers</PrivateAssets>
+	  </PackageReference>
 	  <PackageReference Include="Telegram.Bot" Version="17.0.0" >
 		  <IncludeAssets>runtime; compile; build; native; analyzers; buildtransitive</IncludeAssets>
 		  <ExcludeAssets>contentFiles</ExcludeAssets>

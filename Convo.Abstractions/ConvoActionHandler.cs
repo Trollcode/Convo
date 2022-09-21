@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Convo.Abstractions
@@ -23,7 +24,7 @@ namespace Convo.Abstractions
             RegisterOrUpdateChatAction(new ResetContextAction());
         }
 
-        public Dictionary<string, string> RegisteredActions
+        protected Dictionary<string, string> RegisteredActions
         {
             get
             {
@@ -31,7 +32,7 @@ namespace Convo.Abstractions
             }
         }
 
-        public void RegisterOrUpdateChatAction(IConvoAction action)
+        protected void RegisterOrUpdateChatAction(IConvoAction action)
         {
             if (actions.ContainsKey(action.Id))
             {
@@ -43,7 +44,7 @@ namespace Convo.Abstractions
             }
         }
 
-        private async Task<(ConvoContext, Dictionary<string, string>)> GetContextAndDataForMessage(ConvoMessage message)
+        protected async Task<(ConvoContext, Dictionary<string, string>)> GetContextAndDataForMessage(ConvoMessage message)
         {
             ConvoContext ctx = await storage.GetContextForConversationId(message.ConversationId);
             Dictionary<string, string> ctxData = new Dictionary<string, string>();
@@ -60,7 +61,7 @@ namespace Convo.Abstractions
             return (ctx, ctxData);
         }
 
-        public async Task<ConvoResponse> HandleMessage(ConvoMessage message)
+        protected async Task<bool> HandleMessage(ConvoMessage message)
         {
             (ConvoContext, Dictionary<string, string>) info = await GetContextAndDataForMessage(message);
 
@@ -125,38 +126,40 @@ namespace Convo.Abstractions
             }
 
             await storage.CreateOrUpdateContext(ctx, ctxData);
-            return chatResponse;
-        }
 
-        public async Task<ConvoResponse> HandleCallback(ConvoMessage message)
-        {
-            (ConvoContext, Dictionary<string, string>) info = await GetContextAndDataForMessage(message);
 
-            ConvoContext ctx = info.Item1;
-            Dictionary<string, string> ctxData = info.Item2;
-
-            ConvoResponse chatResponse = new ConvoResponse
+            if(chatResponse != null)
             {
-                Text = "Sorry! An error happened while processing the callback! Please try again."
-            };
-
-            if (!string.IsNullOrWhiteSpace(message.Command))
-            {
-                IConvoAction? tmp = actions.Values.FirstOrDefault(x => x.Command == message.Command);
-                if (tmp != null)
+                if (!string.IsNullOrWhiteSpace(chatResponse.DeleteMessageId))
                 {
-                    ConvoResponse? tmpResponse = await tmp.HandleCallback(ctx, ctxData, message);
-                    if (tmpResponse != null)
-                    {
-                        chatResponse = tmpResponse;
-                    }
+                    await DeleteMessage(chatResponse);
+                }
+
+                if (string.IsNullOrWhiteSpace(chatResponse.Text))
+                {
+                    chatResponse.Text = "MISSING TEXT!";
+                }
+
+                if (!string.IsNullOrWhiteSpace(chatResponse.UpdateMessageId))
+                {
+                    await UpdateMessage(chatResponse);
+                }
+                else
+                {
+                    await SendResponse(chatResponse);
                 }
             }
 
-
-            await storage.CreateOrUpdateContext(ctx, ctxData);
-            return chatResponse;
-
+            return true;
         }
+
+        public abstract Task Initialize();
+
+        protected abstract Task<bool> UpdateMessage(ConvoResponse response);
+        protected abstract Task<bool> DeleteMessage(ConvoResponse response);
+        protected abstract Task<bool> SendResponse(ConvoResponse response);
+
+        protected abstract Task OnSendFailure(ConvoResponse response);
+
     }
 }
