@@ -26,7 +26,7 @@ namespace Convo.Telegram
 
         private bool isInitialized = false;
 
-        public TelegramContextHandler(ILoggerFactory loggerFactory, IConvoContextStorage storage) 
+        public TelegramContextHandler(ILoggerFactory loggerFactory, IConvoContextStorage storage, IEnumerable<ConvoAction> actions) 
             : base(storage)
         {
             logger = loggerFactory.CreateLogger<TelegramContextHandler>();
@@ -38,6 +38,11 @@ namespace Convo.Telegram
             if (telegramKey == null)
             {
                 logger.LogError("Could not find a telegram key stored in environment variable CONVO_TELEGRAM_KEY.");
+            }
+
+            foreach(ConvoAction action in actions)
+            {
+                RegisterOrUpdateChatAction(action);
             }
 
             telegramClient = new TelegramBotClient(telegramKey);
@@ -147,7 +152,18 @@ namespace Convo.Telegram
         {
             if(long.TryParse(conversationId, out long chatId) && int.TryParse(msg.UpdateMessageId, out int messageId))
             {
-                await telegramClient.EditMessageTextAsync(new ChatId(chatId), messageId, msg.Text);
+                IReplyMarkup keyboard = new ReplyKeyboardRemove();// InlineKeyboardMarkup.Empty();
+
+                if (msg is ButtonResponse response)
+                {
+                    if (response.ReplyButtons.Any())
+                    {
+                        keyboard = new InlineKeyboardMarkup(response.ReplyButtons
+                            .Select(x => x.Select(k => InlineKeyboardButton.WithCallbackData(k.Text, k.Command)).ToArray()).ToArray());
+                    }
+                }
+
+                await telegramClient.EditMessageTextAsync(new ChatId(chatId), messageId, msg.Text, replyMarkup: keyboard as InlineKeyboardMarkup);
                 return true;
             }
             return false;
@@ -167,7 +183,19 @@ namespace Convo.Telegram
         {
             if (long.TryParse(conversationId, out long chatId))
             {
-                await telegramClient.SendTextMessageAsync(new ChatId(chatId), msg.Text);
+                IReplyMarkup keyboard = new ReplyKeyboardRemove();// InlineKeyboardMarkup.Empty();
+
+                if (msg is ButtonResponse response)
+                {
+                    if (response.ReplyButtons.Any())
+                    {
+                        keyboard = new InlineKeyboardMarkup(response.ReplyButtons
+                            .Select(x => x.Select(k => InlineKeyboardButton.WithCallbackData(k.Text, k.Command)).ToArray()).ToArray());
+                    }
+                }
+
+                await telegramClient.SendTextMessageAsync(new ChatId(chatId), msg.Text, replyMarkup: keyboard);
+
                 return true;
             }
             return false;
