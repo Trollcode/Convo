@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Convo.Abstractions.Actions
 {
-    internal class BasicAuthenticationAction : IConvoAction
+    internal class BasicAuthenticationAction : ConvoAction
     {
         private readonly string secret = "password";
 
@@ -15,16 +15,14 @@ namespace Convo.Abstractions.Actions
             if(envSecret != null) { 
                 secret = envSecret; 
             }
+
+            Id = "AuthenticationAction";
+            RequireAuthentication = false;
+            Command = "auth";
+            Description = "Built in authentication action";
         }
         
-        public string Id { get; private set; } = "AuthenticationAction";
-
-        public bool RequireAuthentication { get { return false; } }
-
-        public string Command { get { return "auth"; } }
-        public string Description { get { return "Built in authentication action"; } }
-
-        public Task<ConvoResponse?> HandleCommand(ConvoContext context, Dictionary<string, string> data, ConvoMessage command)
+        public override Task<ConvoResponse?> HandleCommand(ConvoContext context, Dictionary<string, string> data, ConvoMessage command)
         {
             var response = new ConvoResponse
             {
@@ -61,7 +59,7 @@ namespace Convo.Abstractions.Actions
             return Task.FromResult<ConvoResponse?>(response);
         }
 
-        public Task<ConvoResponse?> HandleReply(ConvoContext context, Dictionary<string, string> data, ConvoMessage reply)
+        public override Task<ConvoResponse?> HandleReply(ConvoContext context, Dictionary<string, string> data, ConvoMessage reply)
         {
             var response = new ConvoResponse
             {
@@ -86,10 +84,6 @@ namespace Convo.Abstractions.Actions
 
             response.DeleteMessageId = reply.MessageId;
             return Task.FromResult<ConvoResponse?>(response);
-        }
-        public Task<ConvoResponse?> HandleCallback(ConvoContext context, Dictionary<string, string> data, ConvoMessage callback)
-        {
-            return Task.FromResult<ConvoResponse?>(null);
         }
     }
 }

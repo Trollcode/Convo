@@ -1,31 +1,24 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Convo.Abstractions.Actions
 {
-    internal class ResetContextAction : ConvoAction
+    internal class DisplayContextAction : ConvoAction
     {
-        public ResetContextAction()
+        public DisplayContextAction()
         {
-            Id = "ResetContextAction";
-            RequireAuthentication = false;
-            Command = "reset";
-            Description = "Reset chat context";
+            Id = "DisplayContextAction";
+            RequireAuthentication = true;
+            Command = "me";
+            Description = "Display chat context";
         }
 
         public override Task<ConvoResponse?> HandleCommand(ConvoContext context, Dictionary<string, string> data, ConvoMessage command)
         {
-            context.IsAuthenticated = false;
-            context.ExpectingReply = false;
-            context.ExpectingReplyActionId = null;
-            //context.RedirectActionId = null;
-            context.Protocol = command.Protocol;
-
-            data.Clear();
-
             return Task.FromResult<ConvoResponse?>(new ConvoResponse
             {
-                Text = $"Chat context has been reset"
+                Text = $"<pre>{JsonSerializer.Serialize(context)}</pre>"
             });
         }
 

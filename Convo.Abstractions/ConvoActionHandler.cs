@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Convo.Abstractions
 {
@@ -12,9 +13,9 @@ namespace Convo.Abstractions
     {
         private readonly IConvoContextStorage storage;
 
-        private readonly Dictionary<string, IConvoAction> actions = new Dictionary<string, IConvoAction>();
+        private readonly Dictionary<string, ConvoAction> actions = new Dictionary<string, ConvoAction>();
 
-        private IConvoAction authAction = new BasicAuthenticationAction();
+        private ConvoAction authAction = new BasicAuthenticationAction();
 
         public ConvoActionHandler(IConvoContextStorage storage)
         {
@@ -22,6 +23,7 @@ namespace Convo.Abstractions
 
             RegisterOrUpdateChatAction(authAction);
             RegisterOrUpdateChatAction(new ResetContextAction());
+            RegisterOrUpdateChatAction(new DisplayContextAction());
         }
 
         protected Dictionary<string, string> RegisteredActions
@@ -32,7 +34,7 @@ namespace Convo.Abstractions
             }
         }
 
-        protected void RegisterOrUpdateChatAction(IConvoAction action)
+        protected void RegisterOrUpdateChatAction(ConvoAction action)
         {
             if (actions.ContainsKey(action.Id))
             {
@@ -61,13 +63,43 @@ namespace Convo.Abstractions
             return (ctx, ctxData);
         }
 
-        protected virtual async Task<bool> HandleMessage(ConvoMessage message)
+        private async Task<ConvoResponse?> HandleReply(ConvoContext ctx, Dictionary<string, string> data, ConvoMessage message)
         {
-            (ConvoContext, Dictionary<string, string>) info = await GetContextAndDataForMessage(message);
+            ConvoResponse? chatResponse = null;
 
-            ConvoContext ctx = info.Item1;
-            Dictionary<string, string> ctxData = info.Item2;
+            string replyActionId = ctx.ExpectingReplyActionId;
 
+            ctx.ExpectingReply = false;
+            ctx.ExpectingReplyActionId = null;
+
+            if (actions.ContainsKey(replyActionId))
+            {
+                ConvoAction replyAction = actions[replyActionId];
+
+                if (replyAction.RequireAuthentication && !ctx.IsAuthenticated)
+                {
+                    chatResponse = await authAction.HandleCommand(ctx, data, message);
+                }
+                else
+                {
+                    chatResponse = await replyAction.HandleReply(ctx, data, message);
+                }
+            }
+            else
+            {
+                chatResponse = new ConvoResponse
+                {
+                    Text = $"An error happened to send reply to expecting action. No action with id {ctx.ExpectingReplyActionId} exists. Resetting context"
+                };
+                ConvoContext.ResetFromMessage(ctx, message);
+                data.Clear();
+            }
+
+            return chatResponse;
+        }
+
+        private async Task<ConvoResponse?> HandleCommand(ConvoContext ctx, Dictionary<string, string> data, ConvoMessage message)
+        {
             ConvoResponse? chatResponse = new ConvoResponse
             {
                 Text = "Unknown command. Available commands are:\n\n"
@@ -76,57 +108,68 @@ namespace Convo.Abstractions
                         actions.Select(x => $"{(x.Value.Command.StartsWith("/") ? x.Value.Command : "/" + x.Value.Command)} - {x.Value.Description}"))
             };
 
-
-
-            if (ctx.ExpectingReply && !string.IsNullOrWhiteSpace(ctx.ExpectingReplyActionId))
+            if (!string.IsNullOrWhiteSpace(message.Command))
             {
-                if (actions.ContainsKey(ctx.ExpectingReplyActionId))
+                ConvoAction? action = actions.Values.FirstOrDefault(x => x.Command == message.Command);
+                if (action != null)
                 {
-                    string actionId = ctx.ExpectingReplyActionId;
-                    ctx.ExpectingReply = false;
-                    ctx.ExpectingReplyActionId = null;
-
-                    chatResponse = await actions[actionId].HandleReply(ctx, ctxData, message);
-                }
-                else
-                {
-                    chatResponse = new ConvoResponse
+                    if (action.RequireAuthentication && !ctx.IsAuthenticated)
                     {
-                        Text = $"An error happened to send reply to expecting action. No action with id {ctx.ExpectingReplyActionId} exists. Resetting context"
-                    };
-                    ctx = ConvoContext.FromMessage(message);
-                    ctxData.Clear();
+                        chatResponse = await authAction.HandleCommand(ctx, data, message);
+                    }
+                    else
+                    {
+                        chatResponse = await action.HandleCommand(ctx, data, message);
+                    }
                 }
             }
             else
             {
-                if (!string.IsNullOrWhiteSpace(message.Command))
-                {
-                    IConvoAction? tmp = actions.Values.FirstOrDefault(x => x.Command == message.Command);
-                    if (tmp != null)
-                    {
-                        if (tmp.RequireAuthentication && !ctx.IsAuthenticated)
-                        {
-                            ctx.RedirectActionId = tmp.Id;
-                            chatResponse = await authAction.HandleCommand(ctx, ctxData, message);
-                        }
-                        else if (ctx.IsAuthenticated && !string.IsNullOrWhiteSpace(ctx.RedirectActionId))
-                        {
-                            string actionId = ctx.RedirectActionId;
-                            ctx.RedirectActionId = null;
-
-                            chatResponse = await actions[actionId].HandleCommand(ctx, ctxData, message);
-                        }
-                        else
-                        {
-                            chatResponse = await tmp.HandleCommand(ctx, ctxData, message);
-                        }
-                    }
-                }
+                // TODO: Create default action to handle and try to redirect message to correct place
             }
+
+            return chatResponse;
+        }
+
+        protected virtual async Task<bool> HandleMessage(ConvoMessage message)
+        {
+            (ConvoContext, Dictionary<string, string>) info = await GetContextAndDataForMessage(message);
+
+            ConvoContext ctx = info.Item1;
+            Dictionary<string, string> ctxData = info.Item2;
+
+            ConvoResponse? chatResponse = null;
+
+            if (ctx.ExpectingReply && !string.IsNullOrWhiteSpace(ctx.ExpectingReplyActionId))
+            {
+                chatResponse = await HandleReply(ctx, ctxData, message);
+            }
+            else
+            {
+                chatResponse = await HandleCommand(ctx, ctxData, message);
+            }
+
+            
+            //
+            // Clean up context if some bad data were inserted
+            //
+
+            if(!ctx.ExpectingReply && !string.IsNullOrWhiteSpace(ctx.ExpectingReplyActionId))
+            {
+                ctx.ExpectingReplyActionId = null; // NOTE: Warn about this. Since this is user error
+            }
+
+            if(ctx.ExpectingReply && string.IsNullOrEmpty(ctx.ExpectingReplyActionId))
+            {
+                ctx.ExpectingReply = false; // NOTE: Warn about this. Since this is user error
+            }
+
 
             await storage.CreateOrUpdateContext(ctx, ctxData);
 
+            //
+            // Send the response and perform update/deletion action on messages as requested
+            //
 
             if(chatResponse != null)
             {

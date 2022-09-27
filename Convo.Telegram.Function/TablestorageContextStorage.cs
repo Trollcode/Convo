@@ -15,6 +15,8 @@ namespace Convo.Telegram.Example
         private readonly TableClient stateTableClient;
         private readonly TableClient dataTableClient;
 
+        private static string partitionName = "convocontext";
+
         public TablestorageContextStorage()
         {
             tableServiceClient = new TableServiceClient(Environment.GetEnvironmentVariable("CONVO_TABLE_STORAGE"));
@@ -29,7 +31,7 @@ namespace Convo.Telegram.Example
         {
             ContextEntity cet = new ContextEntity
             {
-                PartitionKey = "convocontext",
+                PartitionKey = partitionName,
                 RowKey = ctx.Id,
                 Id = ctx.Id,
                 Protocol = ctx.Protocol,
@@ -38,7 +40,7 @@ namespace Convo.Telegram.Example
                 IsAuthenticated = ctx.IsAuthenticated,
                 ExpectingReply = ctx.ExpectingReply,
                 ExpectingReplyActionId = ctx.ExpectingReplyActionId,
-                RedirectActionId = ctx.RedirectActionId,
+                //RedirectActionId = ctx.RedirectActionId,
                 Updated = DateTime.UtcNow,
                 Created = ctx.Created
             };
@@ -86,7 +88,7 @@ namespace Convo.Telegram.Example
             {
                 Response<ContextEntity> ctx = await stateTableClient.GetEntityAsync<ContextEntity>(
                     rowKey: conversationId,
-                    partitionKey: "convocontext" //NOTE: Can not have all conversations in same partition. Need some Primary key here.
+                    partitionKey: partitionName //NOTE: Can not have all conversations in same partition. Need some Primary key here.
                 );
                 return ctx.Value;
             }
