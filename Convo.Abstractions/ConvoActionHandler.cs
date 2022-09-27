@@ -46,7 +46,7 @@ namespace Convo.Abstractions
 
         protected async Task<(ConvoContext, Dictionary<string, string>)> GetContextAndDataForMessage(ConvoMessage message)
         {
-            ConvoContext ctx = await storage.GetContextForConversationId(message.ConversationId);
+            ConvoContext? ctx = await storage.GetContextForConversationId(message.ConversationId);
             Dictionary<string, string> ctxData = new Dictionary<string, string>();
 
             if (ctx == null)

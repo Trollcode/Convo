@@ -4,11 +4,10 @@ namespace Convo.Abstractions
 {
     public class ConvoContext
     {
-        public Guid Id { get; set; }
+        public string Id { get; set; }
         public Protocol Protocol { get; set; }
         public string ProtocolAlias { get; set; }
         public string ProtocolName { get; set; }
-        public string ProtocolUserIdentifaction { get; set; }
         public bool IsAuthenticated { get; set; }
         public bool ExpectingReply { get; set; }
         public string? ExpectingReplyActionId { get; set; }
@@ -20,14 +19,16 @@ namespace Convo.Abstractions
         {
             return new ConvoContext
             {
-                ProtocolUserIdentifaction = msg.ConversationId,
+                Id = msg.ConversationId,
                 ProtocolAlias = msg.Alias,
                 ProtocolName = msg.Name,
                 IsAuthenticated = false,
                 ExpectingReply = false,
                 ExpectingReplyActionId = null,
                 RedirectActionId = null,
-                Protocol = msg.Protocol
+                Protocol = msg.Protocol,
+                Created = DateTime.UtcNow,
+                Updated = DateTime.UtcNow
             };
         }
     }

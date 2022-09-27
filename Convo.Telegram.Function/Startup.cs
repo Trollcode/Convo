@@ -12,7 +12,7 @@ namespace Convo.Telegram.Example
         public void Configure(IWebJobsBuilder builder)
         {
             builder.Services.AddServerlessTelegramConvo();
-            builder.Services.AddTransient<IConvoContextStorage, ConvoContextStorage>();
+            builder.Services.AddTransient<IConvoContextStorage, TablestorageContextStorage>();
         }
     }
 }
