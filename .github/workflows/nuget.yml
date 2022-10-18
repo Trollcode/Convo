@@ -26,6 +26,6 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore $project
     - name: Build
-      run: dotnet pack $project -c Release -o:package /p:PackageVersion=0.1.${{ github.run_number }} /p:VersionPrefix=0.1.${{ github.run_number }} --no-restore --include-symbols -p:SymbolPackageFormat=snupkg --output ${{ env.PACKAGE_OUTPUT_DIRECTORY }}
+      run: dotnet pack $project -c Release /p:PackageVersion=0.1.${{ github.run_number }} /p:VersionPrefix=0.1.${{ github.run_number }} --no-restore --include-symbols -p:SymbolPackageFormat=snupkg --output ${{ env.PACKAGE_OUTPUT_DIRECTORY }}
     - name: Push generated package to GitHub registry
       run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}\*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s ${{ env.NUGET_SOURCE_URL }}
