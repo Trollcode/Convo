@@ -9,7 +9,6 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Convo.Abstractions\Convo.Abstractions.csproj" />
     <ProjectReference Include="..\Convo.Telegram\Convo.Telegram.csproj" />
   </ItemGroup>
   <ItemGroup>

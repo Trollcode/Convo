@@ -33,7 +33,7 @@ namespace Convo.Telegram.Example
                     Update data = JsonConvert.DeserializeObject<Update>(requestBody);
                     if(data != null)
                     {
-                        await telegram.HandleUpdate(data);
+                        await telegram.HandleMessage(data, null);
                     }
                 }
                 catch (Exception ex)
@@ -48,11 +48,11 @@ namespace Convo.Telegram.Example
         public async Task<IActionResult> Webhook([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req, ILogger log)
         {
             string url = req.Query["url"];
-
+            await Task.Delay(1);
             log.LogInformation($"C# HTTP trigger function processed a request. {url}");
 
             // TODO: Check if url
-            await telegram.RegisterWebhook(url);
+            //await telegram.RegisterWebhook(url);
 
             return new OkObjectResult("");
         }

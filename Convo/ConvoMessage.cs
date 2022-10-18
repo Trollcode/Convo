@@ -1,15 +1,14 @@
 ﻿using System.Linq;
 
-namespace Convo.Abstractions
+namespace Convo
 {
     public class ConvoMessage
     {
-        public string ConversationId { get; set; }
+        //public string ConversationId { get; set; }
         public string MessageId { get; set; }
-        public string Alias { get; set; }
-        public string Name { get; set; }
+        public string? Alias { get; set; }
+        public string? Name { get; set; }
         public string Text { get; set; }
-        public Protocol Protocol { get; set; }
 
         public string Command
         {

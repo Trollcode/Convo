@@ -32,7 +32,7 @@
 		  <ExcludeAssets>contentFiles</ExcludeAssets>
 		  <PrivateAssets>contentfiles; analyzers</PrivateAssets>
 	  </PackageReference>
-	  <PackageReference Include="Telegram.Bot" Version="17.0.0" >
+	  <PackageReference Include="Telegram.Bot" Version="17.0.0">
 		  <IncludeAssets>runtime; compile; build; native; analyzers; buildtransitive</IncludeAssets>
 		  <ExcludeAssets>contentFiles</ExcludeAssets>
 		  <PrivateAssets>contentfiles; analyzers</PrivateAssets>
@@ -45,7 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Convo.Abstractions\Convo.Abstractions.csproj" />
+    <ProjectReference Include="..\Convo\Convo.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,5 @@
 ﻿using Azure;
 using Azure.Data.Tables;
-using Convo.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,22 +26,20 @@ namespace Convo.Telegram.Example
             dataTableClient.CreateIfNotExists();
         }
 
-        public async Task<ConvoContext> CreateOrUpdateContext(ConvoContext ctx, Dictionary<string, string> data)
+        public async Task<IConvoContext> CreateOrUpdateContext(IConvoContext ctx, Dictionary<string, string> data)
         {
             ContextEntity cet = new ContextEntity
             {
                 PartitionKey = partitionName,
-                RowKey = ctx.Id,
-                Id = ctx.Id,
-                Protocol = ctx.Protocol,
-                ProtocolAlias = ctx.ProtocolAlias,
-                ProtocolName = ctx.ProtocolName,
+                RowKey = ctx.ChatId,
+                ChatId = ctx.ChatId,
+                Alias = ctx.Alias,
+                Name = ctx.Name,
                 IsAuthenticated = ctx.IsAuthenticated,
-                ExpectingReply = ctx.ExpectingReply,
                 ExpectingReplyActionId = ctx.ExpectingReplyActionId,
                 //RedirectActionId = ctx.RedirectActionId,
-                Updated = DateTime.UtcNow,
-                Created = ctx.Created
+                //Updated = DateTime.UtcNow,
+                //Created = ctx.Created
             };
 
             await stateTableClient.UpsertEntityAsync(cet);
@@ -63,7 +60,7 @@ namespace Convo.Telegram.Example
 
                 foreach (string keyToBeDeleted in toBeDeleted)
                 {
-                    await dataTableClient.DeleteEntityAsync(ctx.Id, keyToBeDeleted);
+                    await dataTableClient.DeleteEntityAsync(ctx.ChatId, keyToBeDeleted);
                 }
             }
 
@@ -73,7 +70,7 @@ namespace Convo.Telegram.Example
                 {
                     await dataTableClient.UpsertEntityAsync(new DataEntity
                     {
-                        PartitionKey = ctx.Id,
+                        PartitionKey = ctx.ChatId,
                         RowKey = keyValue.Key,
                         Value = keyValue.Value
                     });
@@ -82,7 +79,7 @@ namespace Convo.Telegram.Example
             return cet;
         }
 
-        public async Task<ConvoContext?> GetContextForConversationId(string conversationId)
+        public async Task<IConvoContext?> GetContextForConversationId(string conversationId)
         {
             try
             {
@@ -98,19 +95,40 @@ namespace Convo.Telegram.Example
             }
         }
 
-        public Task<Dictionary<string, string>> GetDataForChatContext(ConvoContext ctx)
+        public Task<Dictionary<string, string>> GetDataForChatContext(IConvoContext ctx)
         {
-            Pageable<DataEntity> data = dataTableClient.Query<DataEntity>(x => x.PartitionKey == ctx.Id);
+            Pageable<DataEntity> data = dataTableClient.Query<DataEntity>(x => x.PartitionKey == ctx.ChatId);
 
             return Task.FromResult(data.ToDictionary(x => x.RowKey, x => x.Value));
         }
 
-        private class ContextEntity : ConvoContext, ITableEntity
+        Task<IConvoContext?> IConvoContextStorage.GetContextForConversationId(string conversationId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IConvoContext> CreateOrUpdateContext(IConvoContext ctx)
+        {
+            throw new NotImplementedException();
+        }
+
+        private class ContextEntity : IConvoContext, ITableEntity
         {
             public string RowKey { get; set; } = default!;
             public string PartitionKey { get; set; } = default!;
             public ETag ETag { get; set; } = default!;
             public DateTimeOffset? Timestamp { get; set; } = default!;
+            public string ChatId { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public string Alias { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public bool IsAuthenticated { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public string? ExpectingReplyActionId { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public Dictionary<string, object?> Data { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+            public void Reset(ConvoMessage message)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private class DataEntity : ITableEntity

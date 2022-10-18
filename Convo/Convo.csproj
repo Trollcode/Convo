@@ -1,16 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<PackageId>Convo.Abstractions</PackageId>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PackageId>Convo</PackageId>
 		<Authors>Karl Løland</Authors>
 		<Company>Trollcode</Company>
 		<Description>
-			Base classes of the statefull convo chat library
+			Simple chatbot command and reply handling
 		</Description>
 		<RepositoryUrl>https://github.com/Trollcode/Convo</RepositoryUrl>
 	</PropertyGroup>
@@ -22,7 +22,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="System.Text.Json" Version="6.0.6" />
+		<PackageReference Include="System.Text.Json" Version="6.0.6">
+			<IncludeAssets>all</IncludeAssets>
+			<ExcludeAssets>contentFiles</ExcludeAssets>
+			<PrivateAssets>contentFiles;analyzers</PrivateAssets>
+		</PackageReference>
 	</ItemGroup>
 
 </Project>

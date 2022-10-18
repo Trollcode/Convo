@@ -1,19 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace Convo.Abstractions.Actions
+namespace Convo.Commands
 {
-    internal class BasicAuthenticationAction : ConvoAction
+    internal class BasicAuthentication : ConvoCommand
     {
         private readonly string secret = "password";
 
-        public BasicAuthenticationAction()
+        public BasicAuthentication()
         {
             string? envSecret = Environment.GetEnvironmentVariable("CONVO_BOT_SECRET");
-            if(envSecret != null) { 
-                secret = envSecret; 
+            if (envSecret != null)
+            {
+                secret = envSecret;
             }
 
             Id = "AuthenticationAction";
@@ -21,8 +21,8 @@ namespace Convo.Abstractions.Actions
             Command = "auth";
             Description = "Built in authentication action";
         }
-        
-        public override Task<ConvoResponse?> HandleCommand(ConvoContext context, Dictionary<string, string> data, ConvoMessage command)
+
+        public override Task<ConvoResponse?> HandleCommand(IConvoContext context, ConvoMessage command)
         {
             var response = new ConvoResponse
             {
@@ -50,7 +50,6 @@ namespace Convo.Abstractions.Actions
             }
             else
             {
-                context.ExpectingReply = true;
                 context.ExpectingReplyActionId = Id;
             }
 
@@ -59,7 +58,7 @@ namespace Convo.Abstractions.Actions
             return Task.FromResult<ConvoResponse?>(response);
         }
 
-        public override Task<ConvoResponse?> HandleReply(ConvoContext context, Dictionary<string, string> data, ConvoMessage reply)
+        public override Task<ConvoResponse?> HandleReply(IConvoContext context, ConvoMessage reply)
         {
             var response = new ConvoResponse
             {
@@ -78,7 +77,6 @@ namespace Convo.Abstractions.Actions
             }
             else
             {
-                context.ExpectingReply = true;
                 context.ExpectingReplyActionId = Id;
             }
 

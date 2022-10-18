@@ -1,12 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Convo.Abstractions.Actions
+namespace Convo.Commands
 {
-    internal class DisplayContextAction : ConvoAction
+    internal class DisplayContext : ConvoCommand
     {
-        public DisplayContextAction()
+        public DisplayContext()
         {
             Id = "DisplayContextAction";
             RequireAuthentication = true;
@@ -14,15 +16,15 @@ namespace Convo.Abstractions.Actions
             Description = "Display chat context";
         }
 
-        public override Task<ConvoResponse?> HandleCommand(ConvoContext context, Dictionary<string, string> data, ConvoMessage command)
+        public override Task<ConvoResponse?> HandleCommand(IConvoContext context, ConvoMessage command)
         {
             return Task.FromResult<ConvoResponse?>(new ConvoResponse
             {
-                Text = $"<pre>{JsonSerializer.Serialize(context)}</pre>"
+                Text = $"{JsonSerializer.Serialize(context)}"
             });
         }
 
-        public override Task<ConvoResponse?> HandleReply(ConvoContext context, Dictionary<string, string> data, ConvoMessage reply)
+        public override Task<ConvoResponse?> HandleReply(IConvoContext context, ConvoMessage reply)
         {
             return Task.FromResult<ConvoResponse?>(new ConvoResponse
             {

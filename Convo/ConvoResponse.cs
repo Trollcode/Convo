@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Convo.Abstractions
+﻿namespace Convo
 {
     public class ConvoResponse
     {

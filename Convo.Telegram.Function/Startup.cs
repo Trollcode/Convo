@@ -1,5 +1,4 @@
-﻿using Convo.Abstractions;
-using Convo.Telegram.Example;
+﻿using Convo.Telegram.Example;
 using Convo.Telegram.Example.Actions;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Hosting;
@@ -15,7 +14,7 @@ namespace Convo.Telegram.Example
             builder.Services.AddServerlessTelegramConvo();
             builder.Services.AddTransient<IConvoContextStorage, TablestorageContextStorage>();
 
-            builder.Services.Add(new ServiceDescriptor(typeof(ConvoAction), typeof(WatchlistAction), ServiceLifetime.Transient));
+            builder.Services.Add(new ServiceDescriptor(typeof(ConvoCommand), typeof(Watchlist), ServiceLifetime.Transient));
         }
     }
 }
