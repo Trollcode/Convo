@@ -4,7 +4,6 @@ namespace Convo
 {
     public class ConvoMessage
     {
-        //public string ConversationId { get; set; }
         public string MessageId { get; set; }
         public string? Alias { get; set; }
         public string? Name { get; set; }
