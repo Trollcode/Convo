@@ -32,9 +32,9 @@ namespace Convo.Options
 
         public List<ConvoOption> Options { get; private set; }
 
-        public static implicit operator List<ConvoOption>(ConvoOptionRow buttonRow)
+        public static implicit operator List<ConvoOption>(ConvoOptionRow optionRow)
         {
-            return buttonRow.Options;
+            return optionRow.Options;
         }
     }
 }
