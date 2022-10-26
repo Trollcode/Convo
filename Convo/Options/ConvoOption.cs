@@ -17,9 +17,9 @@ namespace Convo.Options
         public string Command { get; set; }
 
 
-        public static implicit operator List<ConvoOption>(ConvoOption button)
+        public static implicit operator List<ConvoOption>(ConvoOption option)
         {
-            return new List<ConvoOption> { button };
+            return new List<ConvoOption> { option };
         }
     }
 }

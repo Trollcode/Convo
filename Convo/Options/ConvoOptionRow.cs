@@ -5,24 +5,24 @@ namespace Convo.Options
 {
     public class ConvoOptionRow : IEnumerable<ConvoOption>
     {
-        public ConvoOptionRow(IEnumerable<ConvoOption> buttons)
+        public ConvoOptionRow(IEnumerable<ConvoOption> options)
         {
-            Buttons = buttons.ToList();
+            Options = options.ToList();
         }
 
         public ConvoOptionRow()
         {
-            Buttons = new List<ConvoOption>();
+            Options = new List<ConvoOption>();
         }
 
-        public void Add(ConvoOption button)
+        public void Add(ConvoOption option)
         {
-            Buttons.Add(button);
+            Options.Add(option);
         }
 
         public IEnumerator<ConvoOption> GetEnumerator()
         {
-            return Buttons.GetEnumerator();
+            return Options.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -30,11 +30,11 @@ namespace Convo.Options
             return GetEnumerator();
         }
 
-        public List<ConvoOption> Buttons { get; private set; }
+        public List<ConvoOption> Options { get; private set; }
 
         public static implicit operator List<ConvoOption>(ConvoOptionRow buttonRow)
         {
-            return buttonRow.Buttons;
+            return buttonRow.Options;
         }
     }
 }
