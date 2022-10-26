@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Convo.Options
 {
@@ -8,19 +9,22 @@ namespace Convo.Options
         {
         }
 
-        public ConvoOptions(List<List<ConvoOption>> items) : base(items) { }
+        public ConvoOptions(List<List<ConvoOption>> options) : base(options) { }
 
-        public ConvoOptions(IEnumerable<List<ConvoOption>> items) : base(items) { }
+        public ConvoOptions(IEnumerable<List<ConvoOption>> options) : base(options) { }
 
-        public ConvoOptions(ConvoOptions items) : base(items) { }
+        public ConvoOptions(ConvoOptions options) : base(options) { }
 
-        public void Add(ConvoOption item)
+        public void Add(ConvoOption option)
         {
-            Add(item);
+            base.Add(option);
         }
         public void AddRange(IEnumerable<ConvoOption> collection)
         {
-            AddRange(collection);
+            foreach (ConvoOption option in collection)
+            {
+                Add(option);
+            }
         }
 
     }
