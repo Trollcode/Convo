@@ -148,8 +148,6 @@ namespace Convo
             return true;
         }
 
-        public abstract Task RegisterCommands();
-
         protected abstract Task<bool> UpdateMessage(ConvoResponse response, IConvoContext ctx);
         protected abstract Task<bool> DeleteMessage(ConvoResponse response, IConvoContext ctx);
         protected abstract Task<bool> SendResponse(ConvoResponse response, IConvoContext ctx);
